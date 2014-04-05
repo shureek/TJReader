@@ -4,7 +4,6 @@
  * Date: 03.04.2014
  * Time: 18:21
  * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
  */
 
 using System;
@@ -36,5 +35,15 @@ namespace TJLib
 		End,
 		Unknown = -1,
 		Error = -2
+	}
+	
+	enum LexemType
+	{
+		None = 0,
+		Word,
+		String,
+		Comma,
+		EqualSign,
+		NewLine
 	}
 }

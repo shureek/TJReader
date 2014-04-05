@@ -4,7 +4,6 @@
  * Date: 02.04.2014
  * Time: 15:59
  * 
- * To change this template use Tools | Options | Coding | Edit Standard Headers.
  */
 
 using System;
@@ -43,6 +42,11 @@ namespace TJLib
 			lexer.Open(stream, this.Encoding);
 		}
 		
+		public void Close()
+		{
+			lexer.Close();
+		}
+		
 		void OnError(Exception error)
 		{
 			var handler = ErrorOccured;
@@ -53,7 +57,6 @@ namespace TJLib
 		public PSObject ReadRecord()
 		{
 			PSObject obj = null;
-			obj.TypeNames.Insert(0, "TJRecord");
 			ParserState step = ParserState.Begin;
 			string propertyName = null;
 			
@@ -62,6 +65,7 @@ namespace TJLib
 				long line = lexer.LineNumber;
 				int linePos = lexer.LineOffset;
 				string lexem = lexer.ReadLexem();
+				System.Diagnostics.Debug.WriteLine(String.Format("Parser: {0}, \"{1}\"", step, lexem));
 				
 				try
 				{
@@ -168,8 +172,8 @@ namespace TJLib
 						case ParserState.AfterProperty:
 							{
 								if (lexem == ",")
-									step = ParserState.BeforeProperty;
-								else if (lexem == "\n" || lexem == null)
+									step = ParserState.PropertyName;
+								else if (lexem == Environment.NewLine || lexem == null)
 									step = ParserState.End;
 								else
 									throw new ParserException("Ожидается \",\" или конец строки", step, line, linePos);
@@ -196,7 +200,7 @@ namespace TJLib
 				
 				if (step < 0)
 				{
-					if (lexem == null || lexem == "\n")
+					if (lexem == null || lexem == Environment.NewLine)
 						step = ParserState.End;
 					else if (step == ParserState.Unknown && lexem == ",")
 						step = ParserState.PropertyName;
