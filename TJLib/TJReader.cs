@@ -22,6 +22,7 @@ namespace TJLib
 		public string ProcessName { get; set; }
 		public int ProcessID { get; set; }
 		public Encoding Encoding { get; set; }
+		public bool AddEmptyProperties { get; set; }
 		
 		public event EventHandler<ErrorEventArgs> ErrorOccured;
 		
@@ -59,13 +60,15 @@ namespace TJLib
 			PSObject obj = null;
 			ParserState step = ParserState.Begin;
 			string propertyName = null;
+			long startPos = -1;
 			
 			do
 			{
 				long line = lexer.LineNumber;
 				int linePos = lexer.LineOffset;
+				long filePos = lexer.CharPosition;
 				string lexem = lexer.ReadLexem();
-				System.Diagnostics.Debug.WriteLine(String.Format("Parser: {0}, \"{1}\"", step, lexem));
+				//Debug.WriteLine(String.Format("Parser: {0}, \"{1}\"", step, lexem));
 				
 				try
 				{
@@ -84,6 +87,8 @@ namespace TJLib
 								obj.TypeNames.Insert(0, "TJRecord");
 								obj.Properties.Add(new PSNoteProperty("ProcessName", ProcessName));
 								obj.Properties.Add(new PSNoteProperty("ProcessID", ProcessID));
+								obj.Properties.Add(new PSNoteProperty("Line", line));
+								startPos = filePos;
 								
 								// Это начало, сейчас будет время и длительность
 								var match = reTime.Match(lexem);
@@ -126,29 +131,44 @@ namespace TJLib
 							}
 						case ParserState.PropertyValue:
 							{
-								Debug.Assert(!String.IsNullOrWhiteSpace(propertyName), "Пустое имя свойства");
+								//Debug.Assert(!String.IsNullOrWhiteSpace(propertyName), "Пустое имя свойства");
 								
-								string propertyValue = lexem;
-								// Если есть кавычки, уберем их
-								if (propertyValue.Length >= 2 && (propertyValue[0] == '\'' || propertyValue[0] == '"') && propertyValue[propertyValue.Length - 1] == propertyValue[0])
-									propertyValue = propertyValue.Substring(1, propertyValue.Length - 2);
-								
-								var property = obj.Properties[propertyName];
-								if (property != null)
+								string propertyValue;
+								if (lexem == ",")
 								{
-									// Такое свойство уже есть. Сделаем в нем коллекцию
-									var currentCollection = property.Value as object[];
-									int valueCount = currentCollection != null ? currentCollection.Length : 1;
-									object[] collection = new object[valueCount + 1];
-									if (currentCollection != null)
-										currentCollection.CopyTo(collection, 0);
-									else
-										collection[0] = property.Value;
-									collection[valueCount] = propertyValue;
+									propertyValue = null;
+									step = ParserState.PropertyName;
+								}
+								else if (lexem == Environment.NewLine)
+								{
+									propertyValue = null;
+									step = ParserState.End;
 								}
 								else
-									obj.Properties.Add(new PSNoteProperty(propertyName, propertyValue));
-								step++;
+								{
+									propertyValue = lexem;
+									step++;
+								}
+								
+								if (AddEmptyProperties || !String.IsNullOrEmpty(propertyValue))
+								{
+									var property = obj.Properties[propertyName];
+									if (property != null)
+									{
+										// Такое свойство уже есть. Сделаем в нем коллекцию
+										var currentCollection = property.Value as object[];
+										int valueCount = currentCollection != null ? currentCollection.Length : 1;
+										object[] collection = new object[valueCount + 1];
+										if (currentCollection != null)
+											currentCollection.CopyTo(collection, 0);
+										else
+											collection[0] = property.Value;
+										collection[valueCount] = propertyValue;
+									}
+									else
+										obj.Properties.Add(new PSNoteProperty(propertyName, propertyValue));
+								}
+								
 								break;
 							}
 						case ParserState.BefereEventType:
@@ -174,7 +194,12 @@ namespace TJLib
 								if (lexem == ",")
 									step = ParserState.PropertyName;
 								else if (lexem == Environment.NewLine || lexem == null)
+								{
 									step = ParserState.End;
+									//Debug.Assert(startPos >= 0, "startPos не установлен");
+									int recordLength = (int)(filePos - startPos);
+									obj.Properties.Add(new PSNoteProperty("Length", recordLength));
+								}
 								else
 									throw new ParserException("Ожидается \",\" или конец строки", step, line, linePos);
 								break;

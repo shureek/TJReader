@@ -15,11 +15,10 @@ namespace ConsoleNS
 	{
 		public static void Main(string[] args)
 		{
-			Console.WriteLine("Hello World!");
-			
 			string filename = args[0];
 			TJLib.TJReader reader = new TJLib.TJReader();
 			reader.Open(filename);
+			reader.ErrorOccured += HandleErrorOccured;
 			PSObject record;
 			do
 			{
@@ -30,6 +29,14 @@ namespace ConsoleNS
 			
 			Console.Write("Press any key to continue . . . ");
 			Console.ReadKey(true);
+		}
+
+		static void HandleErrorOccured(object sender, TJLib.ErrorEventArgs e)
+		{
+			var defaultColor = Console.ForegroundColor;
+			Console.ForegroundColor = ConsoleColor.Red;
+			Console.WriteLine("Error: {0}", e.Error);
+			Console.ForegroundColor = defaultColor;
 		}
 	}
 }

@@ -13,7 +13,7 @@ using System.Diagnostics;
 
 namespace TJLib
 {
-	sealed class Lexer
+	public sealed class Lexer
 	{
 		readonly char[] buffer = new char[2048];
 		const string quoteChars = "'\"";
@@ -113,9 +113,19 @@ namespace TJLib
 			LexemType lexemType = LexemType.None;
 			do
 			{
-				if (bufferOffset + index == bufferLength && !ReadBuffer())
-					// Поток закончился. Возвращаем что есть или null
-					return sb.Length > 0 ? sb.ToString() : null;
+				if (bufferOffset + index == bufferLength)
+				{
+					if (index > 0)
+					{
+						sb.Append(buffer, bufferOffset, index);
+						bufferOffset += index;
+						LineOffset += index;
+						index = 0;
+					}
+					if (!ReadBuffer())
+						// Поток закончился. Возвращаем что есть или null
+						return sb.Length > 0 ? sb.ToString() : null;
+				}
 				
 				char ch = buffer[bufferOffset + index];
 				
@@ -123,7 +133,7 @@ namespace TJLib
 				{
 					case LexemType.None:
 						{
-							Debug.Assert(index == 0, "lexemType == None, index != 0)");
+							//Debug.Assert(index == 0, "lexemType == None, index != 0)");
 							if (newLineChars.IndexOf(ch) >= 0)
 							{
 								LineNumber++;
@@ -147,12 +157,14 @@ namespace TJLib
 								// Не будем включать кавычки
 								bufferOffset++;
 								LineOffset++;
+								index--;
 							}
 							else if (ch == ' ')
 							{
 								// Просто пропускаем
 								bufferOffset++;
 								LineOffset++;
+								index--;
 							}
 							else
 								lexemType = LexemType.Word;

@@ -23,7 +23,7 @@
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <StartAction>Project</StartAction>
-    <StartArguments>C:\Data\Work\Гарантия\logs\1cv8_4900\14032916.log</StartArguments>
+    <StartArguments>C:\Data\Work\Гарантия\logs\rmngr_3348\14032913.log</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <OutputPath>bin\Release\</OutputPath>

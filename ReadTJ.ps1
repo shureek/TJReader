@@ -1,4 +1,4 @@
-﻿$SourceFiles = Get-ChildItem -Path 'C:\Data\Development\1C\TJReader' -Filter *.cs -Recurse | select -ExpandProperty FullName
+﻿$SourceFiles = Get-ChildItem -Path 'C:\Data\Development\1C\TJReader\TJLib' -Filter *.cs | select -ExpandProperty FullName
 Add-Type -Path $SourceFiles -ReferencedAssemblies System.Management.Automation
 
 function Get-TJRecord {
@@ -55,7 +55,7 @@ function Get-TJRecord {
     }
 
     end {
-        $reader.Close()
+        
     }
 }
 
