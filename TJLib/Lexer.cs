@@ -15,7 +15,9 @@ namespace TJLib
 {
 	public sealed class Lexer
 	{
-		readonly char[] buffer = new char[2048];
+        const int BufferSize = 2048;
+
+		readonly char[] buffer = new char[BufferSize];
 		const string quoteChars = "'\"";
 		const string operatorChars = ",=";
 		const string newLineChars = "\r\n";
@@ -30,7 +32,7 @@ namespace TJLib
 		/// </summary>
 		int bufferLength;
 		
-		StringBuilder sb = new StringBuilder(2048);
+		StringBuilder sb = new StringBuilder(BufferSize);
 		StreamReader reader = null;
 		
 		/// <summary>
@@ -77,7 +79,7 @@ namespace TJLib
 			bufferLength = 0;
 			charPosition = 0;
 			LineNumber = 1;
-			LineOffset = 0;
+			LineOffset = 1;
 		}
 		
 		/// <summary>
@@ -137,7 +139,7 @@ namespace TJLib
 							if (newLineChars.IndexOf(ch) >= 0)
 							{
 								LineNumber++;
-								LineOffset = 0;
+								LineOffset = 1;
 								lexem = Environment.NewLine;
 								bufferOffset++;
 								// Если следующий символ парный, то пропустим его
@@ -175,27 +177,48 @@ namespace TJLib
 							if (newLineChars.IndexOf(ch) >= 0)
 							{
 								LineNumber++;
-								LineOffset = 0;
+								LineOffset = 1;
 								sb.Append(buffer, bufferOffset, index);
 								sb.Append(Environment.NewLine);
 								bufferOffset += index + 1;
-								index = 0;
 								if ((bufferOffset < bufferLength || ReadBuffer()) && ((buffer[bufferOffset] == '\r' || buffer[bufferOffset] == '\n') && buffer[bufferOffset] != ch))
 									bufferOffset++;
+                                index = -1;
 							}
 							else if (ch == quote)
 							{
-								if (sb.Length > 0)
-								{
-									sb.Append(buffer, bufferOffset, index);
-									lexem = sb.ToString();
-									sb.Length = 0;
-								}
-								else
-									lexem = new String(buffer, bufferOffset, index);
-								bufferOffset += index + 1;
-								LineOffset += index + 1;
-								index = 0;
+                                // Если следующий символ такой же, то это просто кавычка внутри строки
+                                if (bufferOffset + index + 1 == bufferLength)
+                                {
+                                    // Если мы в конце буфера, то прочитаем следующий кусок
+                                    sb.Append(buffer, bufferOffset, index);
+                                    ReadBuffer();
+                                    index = -1;
+                                }
+
+                                if (bufferLength > 0 && buffer[bufferOffset + index + 1] == quote)
+                                {
+                                    // Это кавычка внутри строки. Запишем с строку одну кавычку, вторую пропустим и будем читать дальше
+                                    sb.Append(buffer, bufferOffset, index + 1);
+                                    bufferOffset += index + 2;
+                                    LineOffset += index + 2;
+                                    index = -1;
+                                }
+                                else
+                                {
+                                    if (sb.Length > 0)
+                                    {
+                                        if (index > 0)
+                                            sb.Append(buffer, bufferOffset, index);
+                                        lexem = sb.ToString();
+                                        sb.Length = 0;
+                                    }
+                                    else
+                                        lexem = new String(buffer, bufferOffset, index);
+                                    bufferOffset += index + 1;
+                                    LineOffset += index + 1;
+                                    index = -1;
+                                }
 							}
 							break;
 						}
@@ -213,7 +236,7 @@ namespace TJLib
 									lexem = new String(buffer, bufferOffset, index);
 								bufferOffset += index;
 								LineOffset += index;
-								index = 0;
+								index = -1;
 							}
 							break;
 						}

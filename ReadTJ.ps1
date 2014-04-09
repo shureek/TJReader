@@ -1,4 +1,4 @@
-﻿$SourceFiles = Get-ChildItem -Path 'C:\Data\Development\1C\TJReader\TJLib' -Filter *.cs | select -ExpandProperty FullName
+﻿$SourceFiles = Get-ChildItem -Path 'C:\Users\Kuzin.A\Documents\Projects\TJReader\TJLib' -Filter *.cs | select -ExpandProperty FullName
 Add-Type -Path $SourceFiles -ReferencedAssemblies System.Management.Automation
 
 function Get-TJRecord {
@@ -59,5 +59,5 @@ function Get-TJRecord {
     }
 }
 
-$Path = 'C:\Data\Work\Гарантия\logs'
+$Path = 'D:\1C\Logs\8.3'
 Get-TJRecord $Path -Verbose

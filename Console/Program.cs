@@ -15,7 +15,39 @@ namespace ConsoleNS
 	{
 		public static void Main(string[] args)
 		{
+			Console.WriteLine("Press any key to begin");
+			Console.ReadKey(true);
 			string filename = args[0];
+			ReadRecords(filename);
+			//ReadLexems(filename);
+			
+			Console.Write("Press any key to continue . . . ");
+			Console.ReadKey(true);
+		}
+		
+		static void ReadLexems(string filename)
+		{
+			TJLib.Lexer lexer = new TJLib.Lexer();
+			lexer.Open(filename);
+			while(true)
+			{
+				long line = lexer.LineNumber;
+				int pos = lexer.LineOffset;
+				string lexem = lexer.ReadLexem();
+				if (lexem == null)
+					break;
+				
+				int length = lexem.Length;
+				if (lexem == Environment.NewLine)
+					lexem = "NewLine";
+				else
+					lexem = "\"" + lexem + "\""; 
+				Console.WriteLine("{0},{1}({2}): {3}", line, pos, length, lexem);
+			}
+		}
+		
+		static void ReadRecords(string filename)
+		{
 			TJLib.TJReader reader = new TJLib.TJReader();
 			reader.Open(filename);
 			reader.ErrorOccured += HandleErrorOccured;
@@ -26,11 +58,8 @@ namespace ConsoleNS
 				Console.WriteLine("{0}", record);
 			}
 			while (record != null);
-			
-			Console.Write("Press any key to continue . . . ");
-			Console.ReadKey(true);
 		}
-
+		
 		static void HandleErrorOccured(object sender, TJLib.ErrorEventArgs e)
 		{
 			var defaultColor = Console.ForegroundColor;

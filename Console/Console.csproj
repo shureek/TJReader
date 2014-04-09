@@ -23,7 +23,7 @@
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <StartAction>Project</StartAction>
-    <StartArguments>C:\Data\Work\Гарантия\logs\rmngr_3348\14032913.log</StartArguments>
+    <StartArguments>D:\1C\Logs\8.3\1cv8c_8080\14040915.log</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <OutputPath>bin\Release\</OutputPath>
@@ -55,6 +55,9 @@
       <Project>{E20D67A8-2CD0-48F4-BA4B-933655D7E412}</Project>
       <Name>TJLib</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ProfilingSessions\Session20140409_152301.sdps" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
