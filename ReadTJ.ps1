@@ -1,4 +1,4 @@
-﻿$SourceFiles = Get-ChildItem -Path 'C:\Users\Kuzin.A\Documents\Projects\TJReader\TJLib' -Filter *.cs | select -ExpandProperty FullName
+﻿$SourceFiles = Get-ChildItem -Path "$PSScriptRoot\TJLib" -Filter *.cs | select -ExpandProperty FullName
 Add-Type -Path $SourceFiles -ReferencedAssemblies System.Management.Automation
 
 function Get-TJRecord {
@@ -36,11 +36,19 @@ function Get-TJRecord {
             [int]$Year = 2000 + [int]$Matches.Year
             $FileDate = Get-Date -Year (2000 + [int]$Matches.Year) -Month ($Matches.Month) -Day ($Matches.Day) -Hour ($Matches.Hour) -Minute 0 -Second 0 -Millisecond 0
 
-            Write-Verbose "Reading $FolderName`\$($FileName): $ProcessName ($ProcessID), $FileDate"
-            $reader.Open($FullName)
-            $reader.ProcessName = $ProcessName
-            $reader.ProcessID = $ProcessID
-            $reader.FileDate = $FileDate
+            [PSCustomObject]@{
+                FileName = $FullName;
+                FileDate = $FileDate;
+                ProcessName = $ProcessName;
+                ProcessID = $ProcessID;
+            }
+        } | sort FileDate,ProcessID | %{
+            Write-Verbose "Reading $($_.FileName): $($_.ProcessName) ($($_.ProcessID)), $($_.FileDate)"
+            $reader.Open($_.FileName)
+            $reader.ProcessName = $_.ProcessName
+            $reader.ProcessID = $_.ProcessID
+            $reader.FileDate = $_.FileDate
+            $reader.ComputerName = 'localhost'
 
             while($true) {
                 $record = $reader.ReadRecord();
@@ -59,5 +67,5 @@ function Get-TJRecord {
     }
 }
 
-$Path = 'D:\1C\Logs\8.3'
+$Path = 'C:\Data\Work\Гарантия\ТЖ Вылетает перепроведение'
 Get-TJRecord $Path -Verbose

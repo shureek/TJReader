@@ -22,6 +22,8 @@ namespace TJLib
 		public string ProcessName { get; set; }
 		public int ProcessID { get; set; }
 		public Encoding Encoding { get; set; }
+
+        public string ComputerName { get; set; }
 		public bool AddEmptyProperties { get; set; }
 		
 		public event EventHandler<ErrorEventArgs> ErrorOccured;
@@ -85,6 +87,7 @@ namespace TJLib
 							{
 								obj = new PSObject();
 								obj.TypeNames.Insert(0, "TJRecord");
+                                obj.Properties.Add(new PSNoteProperty("ComputerName", ComputerName));
 								obj.Properties.Add(new PSNoteProperty("ProcessName", ProcessName));
 								obj.Properties.Add(new PSNoteProperty("ProcessID", ProcessID));
 								obj.Properties.Add(new PSNoteProperty("Line", line));

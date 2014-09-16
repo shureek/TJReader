@@ -43,7 +43,10 @@ namespace TJLib
 		/// Индекс текущего символа в файле.
 		/// </summary>
 		long charPosition;
-		public long CharPosition { get { return charPosition + bufferOffset; } }
+        /// <summary>
+        /// Индекс текущего символа в файле.
+        /// </summary>
+        public long CharPosition { get { return charPosition + bufferOffset; } }
 		/// <summary>
 		/// Индекс текущего символа в строке.
 		/// </summary>
@@ -105,7 +108,7 @@ namespace TJLib
 		/// <summary>
 		/// Читает очередную лексему из потока.
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>Прочитанная лексема.</returns>
 		public string ReadLexem()
 		{
 			sb.Length = 0;
