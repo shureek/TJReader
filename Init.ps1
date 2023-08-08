@@ -2,4 +2,4 @@
 if ($SourceFiles.Count -ne 4) {
     throw "Найдено $($SourceFiles.Count) файлов *.cs"
 }
-Add-Type -Path $SourceFiles -ReferencedAssemblies System.Management.Automation
+Add-Type -Path $SourceFiles -ReferencedAssemblies System.Management.Automation, System.Text.RegularExpressions, System.Collections
