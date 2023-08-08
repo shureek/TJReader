@@ -1,12 +1,4 @@
-﻿/*
- * Created by SharpDevelop.
- * User: Kuzin.A
- * Date: 03.04.2014
- * Time: 18:21
- * 
- */
-
-using System;
+﻿using System;
 
 namespace TJLib
 {

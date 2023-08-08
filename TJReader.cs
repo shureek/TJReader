@@ -1,12 +1,4 @@
-﻿/*
- * Created by SharpDevelop.
- * User: Kuzin.A
- * Date: 02.04.2014
- * Time: 15:59
- * 
- */
-
-using System;
+﻿using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Management.Automation;
@@ -17,6 +9,7 @@ namespace TJLib
 	public sealed class TJReader
 	{
 		readonly Lexer lexer = new Lexer();
+		long recNo;
 		
 		public DateTime FileDate { get; set; }
 		public string ProcessName { get; set; }
@@ -25,6 +18,11 @@ namespace TJLib
 
         public string ComputerName { get; set; }
 		public bool AddEmptyProperties { get; set; }
+
+		public System.Collections.Generic.Dictionary<string, Type> PropertyTypes { get; set; }
+
+		public long Position { get { return lexer.BytesPosition; } }
+		public long CharPosition { get { return lexer.CharPosition; } }
 		
 		public event EventHandler<ErrorEventArgs> ErrorOccured;
 		
@@ -33,16 +31,39 @@ namespace TJLib
 		public TJReader()
 		{
 			this.Encoding = System.Text.Encoding.UTF8;
+			this.PropertyTypes = new System.Collections.Generic.Dictionary<string, Type>();
+			this.PropertyTypes["OSThread"] = typeof(int);
+			this.PropertyTypes["t:clientID"] = typeof(int);
+			this.PropertyTypes["t:connectID"] = typeof(int);
+			this.PropertyTypes["callWait"] = typeof(int);
+			this.PropertyTypes["first"] = typeof(bool);
+			this.PropertyTypes["SessionID"] = typeof(int);
+			this.PropertyTypes["Method"] = typeof(int);
+			this.PropertyTypes["CallID"] = typeof(int);
+			this.PropertyTypes["Memory"] = typeof(long);
+			this.PropertyTypes["MemoryPeak"] = typeof(long);
+			this.PropertyTypes["AvMem"] = typeof(long);
+			this.PropertyTypes["InBytes"] = typeof(long);
+			this.PropertyTypes["OutBytes"] = typeof(long);
+			this.PropertyTypes["CpuTime"] = typeof(long);
+			this.PropertyTypes["Rows"] = typeof(long);
+			this.PropertyTypes["RowsAffected"] = typeof(long);
+			this.PropertyTypes["Trans"] = typeof(bool);
+			this.PropertyTypes["dbpid"] = typeof(int);
+			this.PropertyTypes["lka"] = typeof(bool);
+			this.PropertyTypes["lkp"] = typeof(bool);
 		}
 		
 		public void Open(string filename)
 		{
 			lexer.Open(filename, this.Encoding);
+			recNo = 0;
 		}
 		
 		public void Open(System.IO.Stream stream)
 		{
 			lexer.Open(stream, this.Encoding);
+			recNo = 0;
 		}
 		
 		public void Close()
@@ -91,6 +112,7 @@ namespace TJLib
 								obj.Properties.Add(new PSNoteProperty("ProcessName", ProcessName));
 								obj.Properties.Add(new PSNoteProperty("ProcessID", ProcessID));
 								obj.Properties.Add(new PSNoteProperty("Line", line));
+								obj.Properties.Add(new PSNoteProperty("RecNo", ++recNo));
 								startPos = filePos;
 								
 								// Это начало, сейчас будет время и длительность
@@ -104,13 +126,16 @@ namespace TJLib
 									fractionStr = (fractionStr + "0000000").Substring(0, 7);
 								long fraction = Int64.Parse(fractionStr);
 								long timeTicks = minute * TimeSpan.TicksPerMinute + second * TimeSpan.TicksPerSecond + fraction;
-								obj.Properties.Add(new PSNoteProperty("Date", FileDate.AddTicks(timeTicks)));
+								DateTime _date = FileDate.AddTicks(timeTicks);
+								obj.Properties.Add(new PSNoteProperty("Date", _date));
 								
 								long duration = Int64.Parse(match.Groups["Duration"].Value);
 								if (duration < 0)
 									// Переполнение Int32, такое бывает
 									duration += (long)UInt32.MaxValue + 1;
-								obj.Properties.Add(new PSNoteProperty("Duration", new TimeSpan(duration * 1000)));
+								TimeSpan _duration = new TimeSpan(duration * 1000);
+								obj.Properties.Add(new PSNoteProperty("Duration", _duration));
+								obj.Properties.Add(new PSNoteProperty("DateStart", _date - _duration));
 								step++;
 								break;
 							}
@@ -155,21 +180,7 @@ namespace TJLib
 								
 								if (AddEmptyProperties || !String.IsNullOrEmpty(propertyValue))
 								{
-									var property = obj.Properties[propertyName];
-									if (property != null)
-									{
-										// Такое свойство уже есть. Сделаем в нем коллекцию
-										var currentCollection = property.Value as object[];
-										int valueCount = currentCollection != null ? currentCollection.Length : 1;
-										object[] collection = new object[valueCount + 1];
-										if (currentCollection != null)
-											currentCollection.CopyTo(collection, 0);
-										else
-											collection[0] = property.Value;
-										collection[valueCount] = propertyValue;
-									}
-									else
-										obj.Properties.Add(new PSNoteProperty(propertyName, propertyValue));
+									SetProperty(obj, propertyName, propertyValue);
 								}
 								
 								break;
@@ -236,6 +247,61 @@ namespace TJLib
 			}
 			while (step != ParserState.End);
 			return obj;
+		}
+
+		private void SetProperty(PSObject obj, string name, object value)
+		{
+			if (name == "durationus") // Длительность в микросекундах
+			{
+				long ms = Int64.Parse((string)value);
+				TimeSpan _duration = new TimeSpan(ms * 10);
+				obj.Properties["Duration"].Value = _duration;
+				obj.Properties["DateStart"].Value = (DateTime)obj.Properties["Date"].Value - _duration;
+				return;
+			}
+
+			Type valueType;
+			if (PropertyTypes.TryGetValue(name, out valueType))
+			{
+				if (valueType == typeof(int)) {
+					value = Int32.Parse((string)value);
+				}
+				else if (valueType == typeof(long)) {
+					value = Int64.Parse((string)value);
+				}
+				else if (valueType == typeof(bool)) {
+					if ((value as string) == "1") {
+						value = true;
+					}
+					else if ((value as string) == "0") {
+						value = false;
+					}
+					else {
+						value = Boolean.Parse((string)value);
+					}
+				}
+				else {
+					throw new ApplicationException("Unexpected property type");
+				}
+			}
+
+			var property = obj.Properties[name];
+			if (property != null)
+			{
+				// Такое свойство уже есть. Сделаем в нем коллекцию
+				var currentCollection = property.Value as object[];
+				int valueCount = currentCollection != null ? currentCollection.Length : 1;
+				object[] collection = new object[valueCount + 1];
+				if (currentCollection != null)
+					currentCollection.CopyTo(collection, 0);
+				else {
+					collection[0] = property.Value;
+					property.Value = collection;
+				}
+				collection[valueCount] = value;
+			}
+			else
+				obj.Properties.Add(new PSNoteProperty(name, value));
 		}
 	}
 }

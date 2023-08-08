@@ -1,15 +1,8 @@
-﻿/*
- * Created by SharpDevelop.
- * User: Alexander Kuzin
- * Date: 29.03.2014
- * Time: 14:35
- * 
- */
-
-using System;
+﻿using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace TJLib
 {
@@ -51,6 +44,23 @@ namespace TJLib
 		/// Индекс текущего символа в строке.
 		/// </summary>
 		public int LineOffset { get; private set; }
+
+		// Получение позиции в файле взято отсюда:
+		// https://stackoverflow.com/questions/10189270/tracking-the-position-of-the-line-of-a-streamreader
+		readonly static FieldInfo charPosField = typeof(StreamReader).GetField("charPos", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+		readonly static FieldInfo charLenField = typeof(StreamReader).GetField("charLen", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+		readonly static FieldInfo charBufferField = typeof(StreamReader).GetField("charBuffer", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+		/// <summary>
+		/// Кол-во байт прочитано.
+		/// </summary>
+		public long BytesPosition {
+			get {
+				var charBuffer = (char[])charBufferField.GetValue(reader);
+    			var charLen = (int)charLenField.GetValue(reader);
+    			var charPos = (int)charPosField.GetValue(reader);
+				return reader.BaseStream.Position - reader.CurrentEncoding.GetByteCount(charBuffer, charPos, charLen-charPos);
+			}
+		}
 		
 		public Lexer()
 		{ }

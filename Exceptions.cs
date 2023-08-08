@@ -1,12 +1,4 @@
-﻿/*
- * Created by SharpDevelop.
- * User: Kuzin.A
- * Date: 03.04.2014
- * Time: 15:11
- * 
- */
-
-using System;
+﻿using System;
 using System.Runtime.Serialization;
 
 namespace TJLib
