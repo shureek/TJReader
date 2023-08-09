@@ -149,7 +149,7 @@ namespace TJLib
 							}
 						case ParserState.Level:
 							{
-								obj.Properties.Add(new PSNoteProperty("Level", Int32.Parse(lexem)));
+								obj.Properties.Add(new PSNoteProperty("TJLevel", Int32.Parse(lexem)));
 								step++;
 								break;
 							}
