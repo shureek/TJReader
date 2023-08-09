@@ -27,7 +27,7 @@ namespace TJLib
 		public event EventHandler<ErrorEventArgs> ErrorOccured;
 		
 		static readonly Regex reTime = new Regex("^(?<Minute>\\d{2}):(?<Second>\\d{2}).(?<Fraction>\\d+)-(?<Duration>-?\\d+).*$", RegexOptions.Compiled);
-		
+
 		public TJReader()
 		{
 			this.Encoding = System.Text.Encoding.UTF8;
@@ -40,6 +40,8 @@ namespace TJLib
 			this.PropertyTypes["SessionID"] = typeof(int);
 			this.PropertyTypes["Method"] = typeof(int);
 			this.PropertyTypes["CallID"] = typeof(int);
+			this.PropertyTypes["ExcessDurationSec"] = typeof(int);
+			this.PropertyTypes["TotalMemory"] = typeof(long);
 			this.PropertyTypes["Memory"] = typeof(long);
 			this.PropertyTypes["MemoryPeak"] = typeof(long);
 			this.PropertyTypes["AvMem"] = typeof(long);
@@ -261,7 +263,11 @@ namespace TJLib
 			}
 
 			Type valueType;
-			if (PropertyTypes.TryGetValue(name, out valueType))
+			if (name == "ExcessStartTime") // Дата в формате YYYYMMDDHHmmss
+			{
+				value = System.DateTime.ParseExact((string)value, "YYYYMMDDHHmmss", null);
+			}
+			else if (PropertyTypes.TryGetValue(name, out valueType))
 			{
 				if (valueType == typeof(int)) {
 					value = Int32.Parse((string)value);
